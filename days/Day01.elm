@@ -18,8 +18,23 @@ calculatePart1 { left, right } =
 
 
 calculatePart2 : Lists -> Result String Int
-calculatePart2 _ =
-    Err "implement"
+calculatePart2 { left, right } =
+    let
+        similarity l =
+            right
+                |> List.foldl
+                    (\r acc ->
+                        if r == l then
+                            acc + l
+
+                        else
+                            acc
+                    )
+                    0
+    in
+    left
+        |> List.foldl (\l score -> score + similarity l) 0
+        |> Ok
 
 
 parser : Parser Lists
