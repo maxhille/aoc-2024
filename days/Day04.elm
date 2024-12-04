@@ -1,6 +1,5 @@
 module Day04 exposing (Letter(..), calculatePart1, calculatePart2, parser, puzzle)
 
-import Dict
 import Grid exposing (Grid)
 import Parser exposing ((|.), (|=), Parser, Trailing(..))
 import Puzzle exposing (Puzzle, inputParser, listParser)
@@ -11,128 +10,123 @@ type Letter
     | M
     | A
     | S
+    | Z
 
 
-type alias Transcriber =
-    { count : Int
-    , next : Letter
-    }
+part1Masks : List (Grid Letter)
+part1Masks =
+    [ [ [ X, M, A, S ] ]
+    , [ [ S, A, M, X ] ]
+    , [ [ X ]
+      , [ M ]
+      , [ A ]
+      , [ S ]
+      ]
+    , [ [ S ]
+      , [ A ]
+      , [ M ]
+      , [ X ]
+      ]
+    , [ [ X ]
+      , [ Z, M ]
+      , [ Z, Z, A ]
+      , [ Z, Z, Z, S ]
+      ]
+    , [ [ S ]
+      , [ Z, A ]
+      , [ Z, Z, M ]
+      , [ Z, Z, Z, X ]
+      ]
+    , [ [ Z, Z, Z, X ]
+      , [ Z, Z, M ]
+      , [ Z, A ]
+      , [ S ]
+      ]
+    , [ [ Z, Z, Z, S ]
+      , [ Z, Z, A ]
+      , [ Z, M ]
+      , [ X ]
+      ]
+    ]
+        |> List.map Grid.fromLists
 
 
-transcribe : Letter -> Transcriber -> Transcriber
-transcribe letter tr =
-    if tr.next == letter then
-        case letter of
-            X ->
-                { tr | next = M }
-
-            M ->
-                { tr | next = A }
-
-            A ->
-                { tr | next = S }
-
-            S ->
-                { tr | next = X, count = tr.count + 1 }
-
-    else if letter == X then
-        { tr | next = M }
-
-    else
-        { tr | next = X }
+part2Masks : List (Grid Letter)
+part2Masks =
+    [ [ [ M, Z, S ]
+      , [ Z, A ]
+      , [ M, Z, S ]
+      ]
+    , [ [ M, Z, M ]
+      , [ Z, A ]
+      , [ S, Z, S ]
+      ]
+    , [ [ S, Z, M ]
+      , [ Z, A ]
+      , [ S, Z, M ]
+      ]
+    , [ [ S, Z, S ]
+      , [ Z, A ]
+      , [ M, Z, M ]
+      ]
+    ]
+        |> List.map Grid.fromLists
 
 
 calculatePart1 : Grid Letter -> Result String Int
-calculatePart1 grid =
-    let
-        { xs, ys } =
-            Grid.size grid
-
-        transcribeList =
-            List.foldl transcribe { next = X, count = 0 }
-
-        rowsForward =
-            List.map (\y -> List.map (\x -> ( x, y )) (List.range 0 (xs - 1))) (List.range 0 (ys - 1))
-
-        rowsBackward =
-            rowsForward |> List.map List.reverse
-
-        colsForward =
-            List.map (\x -> List.map (\y -> ( x, y )) (List.range 0 (ys - 1))) (List.range 0 (xs - 1))
-
-        colsBackward =
-            colsForward |> List.map List.reverse
-
-        diag1Backward =
-            List.range 0 (xs - 1)
-                |> List.map (\x -> List.map (\y -> ( x, y )) (List.range 0 (ys - 1)))
-                |> List.concat
-                |> List.foldl
-                    (\( x, y ) dict ->
-                        Dict.update (x - y)
-                            (\xys_ ->
-                                case xys_ of
-                                    Just xys ->
-                                        Just <| ( x, y ) :: xys
-
-                                    Nothing ->
-                                        Just [ ( x, y ) ]
-                            )
-                            dict
-                    )
-                    Dict.empty
-                |> Dict.values
-
-        diag1Forward =
-            diag1Backward
-                |> List.map List.reverse
-
-        diag2Backward =
-            List.range 0 (xs - 1)
-                |> List.map (\x -> List.map (\y -> ( x, y )) (List.range 0 (ys - 1)))
-                |> List.concat
-                |> List.foldl
-                    (\( x, y ) dict ->
-                        Dict.update (x + y)
-                            (\xys_ ->
-                                case xys_ of
-                                    Just xys ->
-                                        Just <| ( x, y ) :: xys
-
-                                    Nothing ->
-                                        Just [ ( x, y ) ]
-                            )
-                            dict
-                    )
-                    Dict.empty
-                |> Dict.values
-
-        diag2Forward =
-            diag2Backward
-                |> List.map List.reverse
-    in
-    [ rowsForward
-    , rowsBackward
-    , colsForward
-    , colsBackward
-    , diag1Forward
-    , diag1Backward
-    , diag2Forward
-    , diag2Backward
-    ]
-        |> List.concat
-        |> List.map
-            (List.filterMap (\xy -> Grid.get xy grid)
-                >> transcribeList
-                >> .count
-            )
-        |> List.sum
-        |> Ok
+calculatePart1 =
+    calculate part1Masks >> Ok
 
 
 calculatePart2 : Grid Letter -> Result String Int
-calculatePart2 _ =
-    Err "not implemented"
+calculatePart2 =
+    calculate part2Masks >> Ok
+
+
+calculate : List (Grid Letter) -> Grid Letter -> Int
+calculate masks grid =
+    let
+        { xs, ys } =
+            Grid.size grid
+    in
+    cartesian (List.range 0 (xs - 1)) (List.range 0 (ys - 1))
+        |> List.map
+            (\xy ->
+                List.foldl
+                    (\mask count ->
+                        if containsAt xy mask grid then
+                            count + 1
+
+                        else
+                            count
+                    )
+                    0
+                    masks
+            )
+        |> List.sum
+
+
+containsAt : ( Int, Int ) -> Grid Letter -> Grid Letter -> Bool
+containsAt ( x, y ) mask grid =
+    Grid.toPositionedList mask
+        |> List.all
+            (\( ( dx, dy ), letter ) ->
+                if letter == Z then
+                    True
+
+                else
+                    case Grid.get ( x + dx, y + dy ) grid of
+                        Nothing ->
+                            False
+
+                        Just letter_ ->
+                            letter_ == letter
+            )
+
+
+cartesian : List a -> List b -> List ( a, b )
+cartesian as_ bs =
+    List.concatMap (\x -> List.map (\y -> ( x, y )) bs) as_
 
 
 parser : Parser (Grid Letter)

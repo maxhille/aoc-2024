@@ -3,6 +3,7 @@ module Grid exposing
     , fromLists
     , get
     , size
+    , toPositionedList
     )
 
 import Array exposing (Array)
@@ -32,3 +33,10 @@ size grid =
 get : ( Int, Int ) -> Grid a -> Maybe a
 get ( x, y ) =
     Array.get y >> Maybe.andThen (Array.get x)
+
+
+toPositionedList : Grid a -> List ( ( Int, Int ), a )
+toPositionedList =
+    Array.toIndexedList
+        >> List.map (\( y, xs ) -> Array.toIndexedList xs |> List.map (\( x, a ) -> ( ( x, y ), a )))
+        >> List.concat
