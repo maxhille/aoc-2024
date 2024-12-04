@@ -3,6 +3,7 @@ module Shared exposing (Request, Response, puzzles, toResponse, toResult)
 import Day01
 import Day02
 import Day03
+import Day04
 import Puzzle exposing (Puzzle)
 
 
@@ -11,6 +12,7 @@ puzzles =
     [ Day01.puzzle
     , Day02.puzzle
     , Day03.puzzle
+    , Day04.puzzle
     ]
 
 
