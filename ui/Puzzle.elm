@@ -1,4 +1,4 @@
-module Puzzle exposing (Puzzle, inputParser, listParser)
+module Puzzle exposing (Puzzle, inputParser, listParser, notImplemented)
 
 import Parser exposing ((|.), (|=), Parser)
 
@@ -8,6 +8,11 @@ type alias Puzzle =
     , calculatePart1 : String -> Result String Int
     , calculatePart2 : String -> Result String Int
     }
+
+
+notImplemented : a -> Result String b
+notImplemented =
+    \_ -> Err "Not implemented"
 
 
 inputParser : Parser a -> Parser (List a)
