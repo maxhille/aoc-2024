@@ -20,6 +20,17 @@ calculatePart1 { rules, updates } =
         |> Ok
 
 
+calculatePart2 : Instructions -> Result String Int
+calculatePart2 { rules, updates } =
+    updates
+        |> List.filter (\update -> update /= sort rules update)
+        |> List.map (sort rules)
+        |> List.map (\xs -> List.drop (List.length xs // 2) xs)
+        |> List.filterMap List.head
+        |> List.sum
+        |> Ok
+
+
 sort : List ( Int, Int ) -> List Int -> List Int
 sort rules =
     List.sortWith
@@ -30,11 +41,6 @@ sort rules =
             else
                 GT
         )
-
-
-calculatePart2 : Instructions -> Result String Int
-calculatePart2 =
-    Puzzle.notImplemented
 
 
 parser : Parser Instructions
