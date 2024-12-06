@@ -3,7 +3,7 @@ module Day06 exposing (Direction(..), Lab, Position(..), calculatePart1, calcula
 import Grid exposing (Grid)
 import Parser exposing ((|.), (|=), Parser, Trailing(..))
 import Puzzle exposing (Puzzle)
-import Set
+import Set exposing (Set)
 
 
 type alias Lab =
@@ -16,6 +16,11 @@ type Position
     | Guard Direction
 
 
+type Path
+    = Exit (Set ( ( Int, Int ), Int ))
+    | Loop
+
+
 type Direction
     = Up
     | Left
@@ -25,10 +30,80 @@ type Direction
 
 calculatePart1 : Lab -> Result String Int
 calculatePart1 =
-    trace >> Result.map (Set.fromList >> Set.size)
+    trace
+        >> Result.andThen
+            (\path ->
+                case path of
+                    Loop ->
+                        Err "The guard ran a loop"
+
+                    Exit positionDirections ->
+                        positionDirections
+                            |> Set.map Tuple.first
+                            |> Set.size
+                            |> Ok
+            )
 
 
-trace : Lab -> Result String (List ( Int, Int ))
+calculatePart2 : Lab -> Result String Int
+calculatePart2 lab =
+    let
+        guardPos =
+            Grid.find ((==) (Guard Up)) lab
+                |> List.head
+                |> Result.fromMaybe "Could not locate guard for removal"
+
+        part1Path =
+            trace
+                >> Result.andThen
+                    (\path ->
+                        case path of
+                            Loop ->
+                                Err "The guard ran a loop"
+
+                            Exit positionDirections ->
+                                positionDirections
+                                    |> Set.map Tuple.first
+                                    |> Ok
+                    )
+    in
+    Result.map2
+        (\guardPos_ path ->
+            path
+                |> Set.toList
+                |> List.filter ((/=) guardPos_)
+                |> List.foldl
+                    (\( x, y ) count ->
+                        case trace (Grid.set ( x, y ) Obstacle lab) of
+                            Ok Loop ->
+                                count + 1
+
+                            _ ->
+                                count
+                    )
+                    0
+        )
+        guardPos
+        (part1Path lab)
+
+
+directionToInt : Direction -> Int
+directionToInt direction =
+    case direction of
+        Up ->
+            0
+
+        Right ->
+            1
+
+        Down ->
+            2
+
+        Left ->
+            3
+
+
+trace : Lab -> Result String Path
 trace lab =
     let
         guardPos =
@@ -37,7 +112,7 @@ trace lab =
     case guardPos of
         [ pos ] ->
             Grid.set pos Space lab
-                |> traceHelp pos Up [ pos ]
+                |> traceHelp pos Up (Set.singleton ( pos, directionToInt Up ))
                 |> Ok
 
         [] ->
@@ -47,36 +122,40 @@ trace lab =
             Err "Multiple Guards found"
 
 
-traceHelp : ( Int, Int ) -> Direction -> List ( Int, Int ) -> Lab -> List ( Int, Int )
+traceHelp : ( Int, Int ) -> Direction -> Set ( ( Int, Int ), Int ) -> Lab -> Path
 traceHelp pos direction result lab =
     let
         nextPos =
             next pos direction
     in
-    case Grid.get nextPos lab of
-        Nothing ->
-            pos :: result
+    if Set.member ( nextPos, directionToInt direction ) result then
+        Loop
 
-        Just Obstacle ->
-            let
-                newDirection =
-                    case direction of
-                        Up ->
-                            Right
+    else
+        case Grid.get nextPos lab of
+            Nothing ->
+                Exit <| Set.insert ( pos, directionToInt direction ) result
 
-                        Right ->
-                            Down
+            Just Obstacle ->
+                let
+                    newDirection =
+                        case direction of
+                            Up ->
+                                Right
 
-                        Down ->
-                            Left
+                            Right ->
+                                Down
 
-                        Left ->
-                            Up
-            in
-            traceHelp pos newDirection result lab
+                            Down ->
+                                Left
 
-        Just _ ->
-            traceHelp nextPos direction (pos :: result) lab
+                            Left ->
+                                Up
+                in
+                traceHelp pos newDirection (Set.insert ( pos, directionToInt direction ) result) lab
+
+            Just _ ->
+                traceHelp nextPos direction (Set.insert ( pos, directionToInt direction ) result) lab
 
 
 next : ( Int, Int ) -> Direction -> ( Int, Int )
@@ -93,11 +172,6 @@ next ( x, y ) direction =
 
         Left ->
             ( x - 1, y )
-
-
-calculatePart2 : Lab -> Result String Int
-calculatePart2 =
-    Puzzle.notImplemented
 
 
 parser : Parser Lab
