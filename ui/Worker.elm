@@ -2,6 +2,8 @@ port module Worker exposing (main)
 
 import Platform
 import Shared exposing (Request, Response, puzzles, toResponse)
+import Task
+import Time
 
 
 port fromUi : (Request -> msg) -> Sub msg
@@ -10,7 +12,12 @@ port fromUi : (Request -> msg) -> Sub msg
 port toUi : Response -> Cmd msg
 
 
-run : Request -> Response
+type Step
+    = Process Request
+    | Deliver Response
+
+
+run : Request -> ( Int, Result String Int )
 run { part, day, input } =
     puzzles
         |> List.drop (day - 1)
@@ -31,13 +38,28 @@ run { part, day, input } =
                     Nothing ->
                         Err "worker could not find puzzle"
            )
-        |> toResponse part
+        |> Tuple.pair part
 
 
-main : Program () () Request
+main : Program () () Step
 main =
     Platform.worker
         { init = \_ -> ( (), Cmd.none )
-        , update = \request _ -> ( (), toUi <| run request )
-        , subscriptions = \_ -> fromUi identity
+        , update =
+            \step _ ->
+                case step of
+                    Deliver response ->
+                        ( (), toUi response )
+
+                    Process request ->
+                        ( ()
+                        , Time.now
+                            |> Task.andThen (\started -> Task.succeed ( started, run request ))
+                            |> Task.andThen
+                                (\( started, ( part, result ) ) ->
+                                    Task.map (\stopped -> toResponse part (Time.posixToMillis stopped - Time.posixToMillis started) result) Time.now
+                                )
+                            |> Task.perform Deliver
+                        )
+        , subscriptions = \_ -> fromUi Process
         }

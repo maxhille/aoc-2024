@@ -32,23 +32,24 @@ type alias Response =
     , value : Maybe Int
     , error : Maybe String
     , part : Int
+    , time : Int
     }
 
 
-toResult : Response -> ( Int, Result String Int )
+toResult : Response -> ( Int, Int, Result String Int )
 toResult response =
     if response.success then
-        ( response.part, Ok <| Maybe.withDefault -1 <| response.value )
+        ( response.part, response.time, Ok <| Maybe.withDefault -1 <| response.value )
 
     else
-        ( response.part, Err <| Maybe.withDefault "(no error message in response)" <| response.error )
+        ( response.part, response.time, Err <| Maybe.withDefault "(no error message in response)" <| response.error )
 
 
-toResponse : Int -> Result String Int -> Response
-toResponse part result =
+toResponse : Int -> Int -> Result String Int -> Response
+toResponse part time result =
     case result of
         Ok value ->
-            { part = part, success = True, value = Just value, error = Nothing }
+            { part = part, time = time, success = True, value = Just value, error = Nothing }
 
         Err error ->
-            { part = part, success = False, value = Nothing, error = Just error }
+            { part = part, time = time, success = False, value = Nothing, error = Just error }

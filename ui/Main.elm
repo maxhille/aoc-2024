@@ -31,14 +31,14 @@ type Msg
     | OnUrlChange Url
     | OnUrlRequest UrlRequest
     | CalculatePart Int
-    | OnPartResult Int (Result String Int)
+    | OnPartResult Int Int (Result String Int)
 
 
 type Calculation
     = NotStarted
     | Problem String
     | Progress
-    | Finished Int
+    | Finished Int Int
 
 
 fromUrl : Url -> Int
@@ -106,13 +106,13 @@ update msg model =
             , toWorker { day = model.day, part = part, input = model.input }
             )
 
-        OnPartResult part result ->
+        OnPartResult part time result ->
             if part == 1 then
                 ( { model
                     | calculation1 =
                         case result of
                             Ok int ->
-                                Finished int
+                                Finished int time
 
                             Err error ->
                                 Problem error
@@ -125,7 +125,7 @@ update msg model =
                     | calculation2 =
                         case result of
                             Ok int ->
-                                Finished int
+                                Finished int time
 
                             Err error ->
                                 Problem error
@@ -209,8 +209,8 @@ viewCalculation calculation puzzle input part msg =
             Problem str ->
                 text <| "There was a problem with the calculation: " ++ str
 
-            Finished int ->
-                text <| "Result Part " ++ String.fromInt part ++ ": " ++ String.fromInt int
+            Finished int time ->
+                text <| "Result Part " ++ String.fromInt part ++ " (" ++ String.fromInt time ++ "ms): " ++ String.fromInt int
 
             Progress ->
                 text <| "Working..."
@@ -223,7 +223,7 @@ main =
         { init = init
         , view = view
         , update = update
-        , subscriptions = \_ -> fromWorker (toResult >> (\( part, result ) -> OnPartResult part result))
+        , subscriptions = \_ -> fromWorker (toResult >> (\( part, time, result ) -> OnPartResult part time result))
         , onUrlRequest = OnUrlRequest
         , onUrlChange = OnUrlChange
         }
