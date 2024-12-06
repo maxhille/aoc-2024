@@ -1,7 +1,9 @@
 module Grid exposing
     ( Grid
+    , find
     , fromLists
     , get
+    , set
     , size
     , toPositionedList
     )
@@ -33,6 +35,49 @@ size grid =
 get : ( Int, Int ) -> Grid a -> Maybe a
 get ( x, y ) =
     Array.get y >> Maybe.andThen (Array.get x)
+
+
+set : ( Int, Int ) -> a -> Grid a -> Grid a
+set ( x, y ) a grid =
+    case Array.get y grid of
+        Nothing ->
+            grid
+
+        Just xs ->
+            Array.set y (Array.set x a xs) grid
+
+
+find : (a -> Bool) -> Grid a -> List ( Int, Int )
+find fn =
+    findYHelp fn 0 []
+
+
+findYHelp : (a -> Bool) -> Int -> List ( Int, Int ) -> Grid a -> List ( Int, Int )
+findYHelp fn y hits grid =
+    case Array.get y grid of
+        Nothing ->
+            hits
+
+        Just xs ->
+            findYHelp fn (y + 1) (findXHelp fn ( 0, y ) hits xs) grid
+
+
+findXHelp : (a -> Bool) -> ( Int, Int ) -> List ( Int, Int ) -> Array a -> List ( Int, Int )
+findXHelp fn ( x, y ) hits xs =
+    case Array.get x xs of
+        Nothing ->
+            hits
+
+        Just a ->
+            findXHelp fn
+                ( x + 1, y )
+                (if fn a then
+                    ( x, y ) :: hits
+
+                 else
+                    hits
+                )
+                xs
 
 
 toPositionedList : Grid a -> List ( ( Int, Int ), a )
