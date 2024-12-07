@@ -1,9 +1,7 @@
 module Day07 exposing (Equation, calculatePart1, calculatePart2, parser, puzzle)
 
-import Grid exposing (Grid)
 import Parser exposing ((|.), (|=), Parser, Trailing(..))
 import Puzzle exposing (Puzzle)
-import Set exposing (Set)
 
 
 type alias Equation =
@@ -14,27 +12,33 @@ type alias Equation =
 
 calculatePart1 : List Equation -> Result String Int
 calculatePart1 =
-    List.filter canBeTrue >> List.map .value >> List.sum >> Ok
+    List.filter (canBeTrue [ (+), (*) ]) >> List.map .value >> List.sum >> Ok
 
 
 calculatePart2 : List Equation -> Result String Int
 calculatePart2 =
-    Puzzle.notImplemented
+    let
+        concat x y =
+            -- uncleanly ignore the failure to parse the int back after concat. we know it'll work
+            String.fromInt x ++ String.fromInt y |> String.toInt |> Maybe.withDefault -1
+    in
+    List.filter (canBeTrue [ (+), (*), concat ]) >> List.map .value >> List.sum >> Ok
 
 
-canBeTrue : Equation -> Bool
-canBeTrue { value, numbers } =
-    canBeTrueHelp value 0 numbers
+canBeTrue : List (Int -> Int -> Int) -> Equation -> Bool
+canBeTrue ops { value, numbers } =
+    canBeTrueHelp ops value 0 numbers
 
 
-canBeTrueHelp : Int -> Int -> List Int -> Bool
-canBeTrueHelp test cur numbers =
+canBeTrueHelp : List (Int -> Int -> Int) -> Int -> Int -> List Int -> Bool
+canBeTrueHelp ops test cur numbers =
     case numbers of
         [] ->
             test == cur
 
         x :: xs ->
-            canBeTrueHelp test (cur + x) xs || canBeTrueHelp test (cur * x) xs
+            ops
+                |> List.any (\op -> canBeTrueHelp ops test (op cur x) xs)
 
 
 parser : Parser (List Equation)
