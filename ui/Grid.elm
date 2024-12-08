@@ -3,6 +3,7 @@ module Grid exposing
     , find
     , fromLists
     , get
+    , positionedFold
     , set
     , size
     , toPositionedList
@@ -85,3 +86,8 @@ toPositionedList =
     Array.toIndexedList
         >> List.map (\( y, xs ) -> Array.toIndexedList xs |> List.map (\( x, a ) -> ( ( x, y ), a )))
         >> List.concat
+
+
+positionedFold : (( ( Int, Int ), a ) -> b -> b) -> b -> Grid a -> b
+positionedFold fn b =
+    toPositionedList >> List.foldl fn b

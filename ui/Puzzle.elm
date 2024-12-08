@@ -1,4 +1,4 @@
-module Puzzle exposing (Puzzle, inputParser, listParser, notImplemented)
+module Puzzle exposing (Puzzle, cartesian, inputParser, listParser, notImplemented)
 
 import Parser exposing ((|.), (|=), Parser)
 
@@ -47,3 +47,8 @@ listParserHelp itemParser revItems =
         , Parser.succeed ()
             |> Parser.map (\_ -> Parser.Done (List.reverse revItems))
         ]
+
+
+cartesian : List a -> List b -> List ( a, b )
+cartesian as_ bs =
+    List.concatMap (\x -> List.map (\y -> ( x, y )) bs) as_

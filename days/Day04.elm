@@ -2,7 +2,7 @@ module Day04 exposing (Letter(..), calculatePart1, calculatePart2, parser, puzzl
 
 import Grid exposing (Grid)
 import Parser exposing ((|.), (|=), Parser, Trailing(..))
-import Puzzle exposing (Puzzle, inputParser, listParser)
+import Puzzle exposing (Puzzle, cartesian, inputParser, listParser)
 
 
 type Letter
@@ -122,11 +122,6 @@ containsAt ( x, y ) mask grid =
                         Just letter_ ->
                             letter_ == letter
             )
-
-
-cartesian : List a -> List b -> List ( a, b )
-cartesian as_ bs =
-    List.concatMap (\x -> List.map (\y -> ( x, y )) bs) as_
 
 
 parser : Parser (Grid Letter)
