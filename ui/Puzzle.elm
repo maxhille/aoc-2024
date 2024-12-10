@@ -1,4 +1,11 @@
-module Puzzle exposing (Puzzle, cartesian, inputParser, listParser, notImplemented)
+module Puzzle exposing
+    ( Puzzle
+    , cartesian
+    , inputParser
+    , listParser
+    , notImplemented
+    , singleDigitParser
+    )
 
 import Parser exposing ((|.), (|=), Parser)
 
@@ -47,6 +54,23 @@ listParserHelp itemParser revItems =
         , Parser.succeed ()
             |> Parser.map (\_ -> Parser.Done (List.reverse revItems))
         ]
+
+
+singleDigitParser : Parser Int
+singleDigitParser =
+    (Parser.getChompedString <|
+        Parser.succeed ()
+            |. Parser.chompIf Char.isDigit
+    )
+        |> Parser.andThen
+            (\str ->
+                case String.toInt str of
+                    Just int ->
+                        Parser.succeed int
+
+                    Nothing ->
+                        Parser.problem <| "Cannot parse to int: " ++ str
+            )
 
 
 cartesian : List a -> List b -> List ( a, b )

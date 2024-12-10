@@ -218,26 +218,9 @@ parser =
         , end = ""
         , separator = ""
         , spaces = Parser.chompWhile (always False)
-        , item = singleDigitParser
+        , item = Puzzle.singleDigitParser
         , trailing = Parser.Optional
         }
-
-
-singleDigitParser : Parser Int
-singleDigitParser =
-    (Parser.getChompedString <|
-        Parser.succeed ()
-            |. Parser.chompIf (always True)
-    )
-        |> Parser.andThen
-            (\str ->
-                case String.toInt str of
-                    Just int ->
-                        Parser.succeed int
-
-                    Nothing ->
-                        Parser.problem <| "Cannot parse to int: " ++ str
-            )
 
 
 puzzle : Puzzle
