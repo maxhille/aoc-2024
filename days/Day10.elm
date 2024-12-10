@@ -14,12 +14,12 @@ type alias Location =
 
 calculatePart1 : Grid Int -> Result String Int
 calculatePart1 grid =
-    trailHeads grid |> List.map (score grid) |> List.sum |> Ok
+    trailHeads grid |> List.map (scorePart1 grid) |> List.sum |> Ok
 
 
 calculatePart2 : Grid Int -> Result String Int
-calculatePart2 =
-    Puzzle.notImplemented
+calculatePart2 grid =
+    trailHeads grid |> List.map (scorePart2 grid) |> List.sum |> Ok
 
 
 trailHeads : Grid Int -> List Location
@@ -31,12 +31,19 @@ trailHeads =
     Grid.find ((==) height) >> List.map (\xy -> { xy = xy, height = height })
 
 
-score : Grid Int -> Location -> Int
-score grid trailHead =
+scorePart1 : Grid Int -> Location -> Int
+scorePart1 grid trailHead =
     scoreHelp grid [ trailHead ]
         |> List.map .xy
         |> Set.fromList
         |> Set.size
+
+
+scorePart2 : Grid Int -> Location -> Int
+scorePart2 grid trailHead =
+    scoreHelp grid [ trailHead ]
+        |> List.map .xy
+        |> List.length
 
 
 scoreHelp : Grid Int -> List Location -> List Location

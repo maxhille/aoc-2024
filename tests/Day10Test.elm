@@ -33,6 +33,28 @@ suite =
                         |> Result.mapError Parser.deadEndsToString
                         |> Result.andThen calculatePart1
                     )
+        , test "Part 2 - Example 1" <|
+            \_ ->
+                let
+                    input =
+                        sanitize <|
+                            """
+                            89010123
+                            78121874
+                            87430965
+                            96549874
+                            45678903
+                            32019012
+                            01329801
+                            10456732
+                            """
+                in
+                Expect.equal
+                    (Ok 81)
+                    (Parser.run parser input
+                        |> Result.mapError Parser.deadEndsToString
+                        |> Result.andThen calculatePart2
+                    )
         , test "parser" <|
             \_ ->
                 let
