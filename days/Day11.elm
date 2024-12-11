@@ -1,33 +1,62 @@
 module Day11 exposing (calculatePart1, calculatePart2, parser, puzzle)
 
+import Dict exposing (Dict)
 import Parser exposing ((|.), (|=), Parser, Trailing(..))
 import Puzzle exposing (Puzzle)
 
 
 calculatePart1 : List Int -> Result String Int
-calculatePart1 initialStones =
-    List.foldl (\_ stones -> List.concatMap blink stones) initialStones (List.range 1 25)
-        |> List.length
-        |> Ok
+calculatePart1 =
+    List.map (Tuple.pair 25)
+        >> countStones
+        >> Ok
 
 
 calculatePart2 : List Int -> Result String Int
 calculatePart2 =
-    Puzzle.notImplemented
+    List.map (Tuple.pair 75)
+        >> countStones
+        >> Ok
 
 
-blink : Int -> List Int
-blink stone =
-    case split stone of
-        Nothing ->
-            if stone == 0 then
-                [ 1 ]
+countStones : List ( Int, Int ) -> Int
+countStones =
+    countStonesHelp Dict.empty >> Tuple.second
 
-            else
-                [ stone * 2024 ]
 
-        Just ( stone1, stone2 ) ->
-            [ stone1, stone2 ]
+countStonesHelp : Dict ( Int, Int ) Int -> List ( Int, Int ) -> ( Dict ( Int, Int ) Int, Int )
+countStonesHelp dict stones =
+    case stones of
+        [] ->
+            ( dict, 0 )
+
+        ( steps, stone ) :: rest ->
+            case Dict.get ( steps, stone ) dict of
+                Just knownCount ->
+                    countStonesHelp dict rest |> Tuple.mapSecond ((+) knownCount)
+
+                Nothing ->
+                    if steps == 0 then
+                        countStonesHelp dict rest |> Tuple.mapSecond ((+) 1)
+
+                    else
+                        let
+                            ( next, rest_ ) =
+                                case split stone of
+                                    Nothing ->
+                                        if stone == 0 then
+                                            ( ( steps - 1, 1 ), rest )
+
+                                        else
+                                            ( ( steps - 1, stone * 2024 ), rest )
+
+                                    Just ( stone1, stone2 ) ->
+                                        ( ( steps - 1, stone1 ), ( steps - 1, stone2 ) :: rest )
+
+                            ( nextDict, nextCount ) =
+                                countStonesHelp dict [ next ]
+                        in
+                        countStonesHelp (Dict.insert next nextCount nextDict) rest_ |> Tuple.mapSecond ((+) nextCount)
 
 
 split : Int -> Maybe ( Int, Int )
