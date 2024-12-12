@@ -11,6 +11,7 @@ import Day08
 import Day09
 import Day10
 import Day11
+import Day12
 import Puzzle exposing (Puzzle)
 
 
@@ -27,6 +28,7 @@ puzzles =
     , Day09.puzzle
     , Day10.puzzle
     , Day11.puzzle
+    , Day12.puzzle
     ]
 
 

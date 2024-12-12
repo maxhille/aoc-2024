@@ -1,5 +1,6 @@
 module Grid exposing
     ( Grid
+    , Pos
     , find
     , fromLists
     , get
@@ -10,6 +11,10 @@ module Grid exposing
     )
 
 import Array exposing (Array)
+
+
+type alias Pos =
+    ( Int, Int )
 
 
 type alias Grid a =
@@ -88,6 +93,6 @@ toPositionedList =
         >> List.concat
 
 
-positionedFold : (( ( Int, Int ), a ) -> b -> b) -> b -> Grid a -> b
+positionedFold : (( Pos, a ) -> b -> b) -> b -> Grid a -> b
 positionedFold fn b =
     toPositionedList >> List.foldl fn b

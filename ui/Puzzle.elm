@@ -1,12 +1,15 @@
 module Puzzle exposing
     ( Puzzle
     , cartesian
+    , charParser
+    , gridParser
     , inputParser
     , listParser
     , notImplemented
     , singleDigitParser
     )
 
+import Grid exposing (Grid)
 import Parser exposing ((|.), (|=), Parser)
 
 
@@ -70,6 +73,41 @@ singleDigitParser =
 
                     Nothing ->
                         Parser.problem <| "Cannot parse to int: " ++ str
+            )
+
+
+gridParser : Parser a -> Parser (Grid a)
+gridParser itemParser =
+    Parser.sequence
+        { start = ""
+        , end = ""
+        , separator = "\n"
+        , spaces = Parser.chompWhile (always False)
+        , item =
+            Parser.sequence
+                { start = ""
+                , end = ""
+                , separator = ""
+                , spaces = Parser.chompWhile (always False)
+                , item = itemParser
+                , trailing = Parser.Optional
+                }
+        , trailing = Parser.Optional
+        }
+        |> Parser.map Grid.fromLists
+
+
+charParser : (Char -> Bool) -> Parser Char
+charParser isChar =
+    Parser.getChompedString (Parser.chompIf isChar)
+        |> Parser.andThen
+            (\str ->
+                case str |> String.toList >> List.head of
+                    Nothing ->
+                        Parser.problem "could not parse char"
+
+                    Just char ->
+                        Parser.succeed char
             )
 
 
