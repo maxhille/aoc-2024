@@ -25,47 +25,70 @@ type alias Machine =
 
 calculatePart1 : List Machine -> Result String Int
 calculatePart1 =
-    List.filterMap minTokens >> List.sum >> Ok
-
-
-minTokens : Machine -> Maybe Int
-minTokens machine =
-    minTokensHelp machine 0
-
-
-minTokensHelp : Machine -> Int -> Maybe Int
-minTokensHelp { a, b, prize } bPresses =
-    let
-        restX =
-            prize.x - b.x * bPresses
-
-        restY =
-            prize.y - b.y * bPresses
-    in
-    if bPresses > 100 then
-        Nothing
-
-    else if modBy a.x restX == 0 && modBy a.y restY == 0 then
-        let
-            aPresses1 =
-                restX // a.x
-
-            aPresses2 =
-                restY // a.y
-        in
-        if aPresses1 /= aPresses2 || aPresses1 > 100 then
-            minTokensHelp { a = a, b = b, prize = prize } (bPresses + 1)
-
-        else
-            Just (aPresses1 * 3 + bPresses * 1)
-
-    else
-        minTokensHelp { a = a, b = b, prize = prize } (bPresses + 1)
+    List.filterMap minTokens
+        >> List.filter (\{ a, b } -> a <= 100 && b <= 100)
+        >> List.map (\{ a, b } -> a * 3 + b * 1)
+        >> List.sum
+        >> Ok
 
 
 calculatePart2 : List Machine -> Result String Int
 calculatePart2 =
-    Puzzle.notImplemented
+    List.map
+        (\machine ->
+            let
+                prize =
+                    machine.prize
+            in
+            { machine
+                | prize =
+                    { prize
+                        | x = prize.x + 10000000000000
+                        , y = prize.y + 10000000000000
+                    }
+            }
+        )
+        >> List.filterMap minTokens
+        >> List.map (\{ a, b } -> a * 3 + b * 1)
+        >> List.sum
+        >> Ok
+
+
+minTokens : Machine -> Maybe { a : Int, b : Int }
+minTokens { a, b, prize } =
+    let
+        aPresses =
+            cramerX { a1 = a.x, b1 = b.x, a2 = a.y, b2 = b.y, c1 = prize.x, c2 = prize.y }
+                |> toInt
+
+        bPresses =
+            cramerY { a1 = a.x, b1 = b.x, a2 = a.y, b2 = b.y, c1 = prize.x, c2 = prize.y }
+                |> toInt
+    in
+    Maybe.map2 (\aPresses_ bPresses_ -> { a = aPresses_, b = bPresses_ }) aPresses bPresses
+
+
+toInt : Float -> Maybe Int
+toInt float =
+    let
+        int =
+            round float
+    in
+    if toFloat int == float then
+        Just int
+
+    else
+        Nothing
+
+
+cramerX : { a1 : Int, a2 : Int, b1 : Int, b2 : Int, c1 : Int, c2 : Int } -> Float
+cramerX { a1, a2, b1, b2, c1, c2 } =
+    toFloat (c1 * b2 - b1 * c2) / toFloat (a1 * b2 - b1 * a2)
+
+
+cramerY : { a1 : Int, a2 : Int, b1 : Int, b2 : Int, c1 : Int, c2 : Int } -> Float
+cramerY { a1, a2, b1, b2, c1, c2 } =
+    toFloat (a1 * c2 - c1 * a2) / toFloat (a1 * b2 - b1 * a2)
 
 
 parser : Parser (List Machine)
