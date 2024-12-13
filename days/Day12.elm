@@ -15,7 +15,15 @@ type alias Region =
 calculatePart1 : Grid Char -> Result String Int
 calculatePart1 =
     toRegions
-        >> List.map (\region -> perimeter region * area region)
+        >> List.map (\region -> (perimeter region |> List.length) * area region)
+        >> List.sum
+        >> Ok
+
+
+calculatePart2 : Grid Char -> Result String Int
+calculatePart2 =
+    toRegions
+        >> List.map (\region -> corners region * area region)
         >> List.sum
         >> Ok
 
@@ -25,36 +33,124 @@ area =
     .xys >> Set.size
 
 
-perimeter : Region -> Int
-perimeter { xys } =
+bounds : Region -> { xMin : Int, xMax : Int, yMin : Int, yMax : Int }
+bounds =
+    .xys
+        >> Set.toList
+        >> List.unzip
+        >> (\( xs, ys ) ->
+                { xMin = List.minimum xs |> Maybe.withDefault 1000
+                , xMax = List.maximum xs |> Maybe.withDefault 0
+                , yMin = List.minimum ys |> Maybe.withDefault 1000
+                , yMax = List.maximum ys |> Maybe.withDefault 0
+                }
+           )
+
+
+corners : Region -> Int
+corners region =
     let
         { xMin, xMax, yMin, yMax } =
-            xys
-                |> Set.toList
-                |> List.unzip
-                |> (\( xs, ys ) ->
-                        { xMin = List.minimum xs |> Maybe.withDefault 1000
-                        , xMax = List.maximum xs |> Maybe.withDefault 0
-                        , yMin = List.minimum ys |> Maybe.withDefault 1000
-                        , yMax = List.maximum ys |> Maybe.withDefault 0
-                        }
-                   )
+            bounds region
+    in
+    cartesian (List.range (xMin - 1) (xMax + 1)) (List.range (yMin - 1) (yMax + 1))
+        |> List.foldl (\xy acc -> acc + cornerCount xy region.xys) 0
+
+
+cornerCount : Pos -> Set Pos -> Int
+cornerCount ( x, y ) xys =
+    let
+        -- x#
+        -- ##
+        topLeftConcave =
+            [ ( False, ( x, y ) ), ( True, ( x + 1, y ) ), ( True, ( x, y + 1 ) ), ( True, ( x + 1, y + 1 ) ) ]
+
+        -- #x
+        -- ##
+        topRightConcave =
+            [ ( True, ( x - 1, y ) ), ( False, ( x, y ) ), ( True, ( x - 1, y + 1 ) ), ( True, ( x, y + 1 ) ) ]
+
+        -- ##
+        -- #x
+        bottomRightConcave =
+            [ ( True, ( x - 1, y - 1 ) ), ( True, ( x, y - 1 ) ), ( True, ( x - 1, y ) ), ( False, ( x, y ) ) ]
+
+        -- ##
+        -- x#
+        bottomLeftConcave =
+            [ ( True, ( x, y - 1 ) ), ( True, ( x + 1, y - 1 ) ), ( False, ( x, y ) ), ( True, ( x + 1, y ) ) ]
+
+        -- x.
+        -- .#
+        topLeftConvex =
+            [ ( False, ( x + 1, y ) ), ( False, ( x, y + 1 ) ), ( True, ( x + 1, y + 1 ) ) ]
+
+        -- .x
+        -- #.
+        topRightConvex =
+            [ ( False, ( x - 1, y ) ), ( True, ( x - 1, y + 1 ) ), ( False, ( x, y + 1 ) ) ]
+
+        -- #.
+        -- .x
+        bottomRightConvex =
+            [ ( True, ( x - 1, y - 1 ) ), ( False, ( x, y - 1 ) ), ( False, ( x - 1, y ) ) ]
+
+        -- .#
+        -- x.
+        bottomLeftConvex =
+            [ ( False, ( x, y - 1 ) ), ( True, ( x + 1, y - 1 ) ), ( False, ( x + 1, y ) ) ]
+    in
+    [ topLeftConcave
+    , topRightConcave
+    , bottomLeftConcave
+    , bottomRightConcave
+    , topLeftConvex
+    , topRightConvex
+    , bottomLeftConvex
+    , bottomRightConvex
+    ]
+        |> List.filter (List.all (\( contains, xy_ ) -> Set.member xy_ xys == contains))
+        |> List.length
+
+
+perimeter : Region -> List Touch
+perimeter region =
+    let
+        { xMin, xMax, yMin, yMax } =
+            bounds region
     in
     cartesian (List.range (xMin - 1) (xMax + 1)) (List.range (yMin - 1) (yMax + 1))
         |> List.foldl
-            (\xy sum ->
-                if not (Set.member xy xys) then
-                    sum + touches xy xys
+            (\xy acc ->
+                if not (Set.member xy region.xys) then
+                    touches xy region.xys ++ acc
 
                 else
-                    sum
+                    acc
             )
-            0
+            []
 
 
-calculatePart2 : Grid Char -> Result String Int
-calculatePart2 =
-    Puzzle.notImplemented
+type Direction
+    = Vertical
+    | Horizontal
+
+
+type alias Touch =
+    { pos : Pos, dir : Direction }
+
+
+touches : Pos -> Set Pos -> List Touch
+touches ( x_, y_ ) xys =
+    List.filterMap
+        (\( xy_, dir ) ->
+            if Set.member xy_ xys then
+                Just { pos = ( x_, y_ ), dir = dir }
+
+            else
+                Nothing
+        )
+        [ ( ( x_ + 1, y_ ), Vertical ), ( ( x_ - 1, y_ ), Vertical ), ( ( x_, y_ + 1 ), Horizontal ), ( ( x_, y_ - 1 ), Horizontal ) ]
 
 
 toRegions : Grid Char -> List Region
@@ -99,12 +195,6 @@ neighbours : Char -> Grid Char -> Pos -> List Pos
 neighbours char grid ( x, y ) =
     [ ( x - 1, y ), ( x + 1, y ), ( x, y - 1 ), ( x, y + 1 ) ]
         |> List.filter (\xy -> Grid.get xy grid |> Maybe.map ((==) char) |> Maybe.withDefault False)
-
-
-touches : Pos -> Set Pos -> Int
-touches ( x_, y_ ) xys =
-    List.filter (\xy_ -> Set.member xy_ xys) [ ( x_ + 1, y_ ), ( x_ - 1, y_ ), ( x_, y_ + 1 ), ( x_, y_ - 1 ) ]
-        |> List.length
 
 
 parser : Parser (Grid Char)
