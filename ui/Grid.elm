@@ -30,7 +30,7 @@ initialize ( xs, ys ) f =
 
 toStrings : (a -> String) -> Grid a -> List String
 toStrings f grid =
-    Array.map (\xs -> Array.map f xs |> Array.toList |> String.concat) grid |> Array.toList
+    Array.map (\xs -> Array.map f xs |> Array.toList |> String.concat) grid |> Array.toList |> List.reverse
 
 
 fromLists : List (List a) -> Grid a
