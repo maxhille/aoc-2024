@@ -1,5 +1,6 @@
 module Day14 exposing (calculatePart1, calculatePart2, parser, puzzle)
 
+import Grid
 import Parser exposing ((|.), (|=), Parser, Trailing(..))
 import Puzzle exposing (Puzzle)
 
@@ -18,14 +19,32 @@ type alias Space =
 
 calculatePart1 : Space -> List Robot -> Result String Int
 calculatePart1 space robots =
-    simulate 100 space robots
+    simulatePart1 100 space robots
         |> safetyFactor space
         |> Ok
 
 
 calculatePart2 : Space -> List Robot -> Result String Int
-calculatePart2 _ =
-    Puzzle.notImplemented
+calculatePart2 space =
+    simulatePart2 0 space
+        >> Ok
+
+
+simulatePart2 : Int -> Space -> List Robot -> Int
+simulatePart2 seconds space robots =
+    if christmasTree space robots then
+        seconds
+
+    else
+        simulatePart2 (seconds + 1) space (List.map (advance space) robots)
+
+
+christmasTree : Space -> List Robot -> Bool
+christmasTree space =
+    List.foldl (\robot grid -> Grid.set ( robot.p.x, robot.p.y ) '#' grid) (Grid.initialize ( space.width, space.height ) (\_ -> ' '))
+        >> Grid.toStrings String.fromChar
+        >> String.concat
+        >> String.contains "#############"
 
 
 safetyFactor : Space -> List Robot -> Int
@@ -64,13 +83,13 @@ safetyFactor space =
         >> (\quadrants -> List.length quadrants.topLeft * List.length quadrants.topRight * List.length quadrants.botRight * List.length quadrants.botLeft)
 
 
-simulate : Int -> Space -> List Robot -> List Robot
-simulate seconds space robots =
+simulatePart1 : Int -> Space -> List Robot -> List Robot
+simulatePart1 seconds space robots =
     if seconds == 0 then
         robots
 
     else
-        simulate (seconds - 1) space (List.map (advance space) robots)
+        simulatePart1 (seconds - 1) space (List.map (advance space) robots)
 
 
 advance : Space -> Robot -> Robot

@@ -4,10 +4,12 @@ module Grid exposing
     , find
     , fromLists
     , get
+    , initialize
     , positionedFold
     , set
     , size
     , toPositionedList
+    , toStrings
     )
 
 import Array exposing (Array)
@@ -19,6 +21,16 @@ type alias Pos =
 
 type alias Grid a =
     Array (Array a)
+
+
+initialize : ( Int, Int ) -> (Pos -> a) -> Grid a
+initialize ( xs, ys ) f =
+    Array.initialize ys (\y -> Array.initialize xs (\x -> f ( x, y )))
+
+
+toStrings : (a -> String) -> Grid a -> List String
+toStrings f grid =
+    Array.map (\xs -> Array.map f xs |> Array.toList |> String.concat) grid |> Array.toList
 
 
 fromLists : List (List a) -> Grid a
