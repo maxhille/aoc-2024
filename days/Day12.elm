@@ -202,6 +202,20 @@ parser =
     gridParser (charParser Char.isAlphaNum)
 
 
+charParser : (Char -> Bool) -> Parser Char
+charParser isChar =
+    Parser.getChompedString (Parser.chompIf isChar)
+        |> Parser.andThen
+            (\str ->
+                case str |> String.toList >> List.head of
+                    Nothing ->
+                        Parser.problem "could not parse char"
+
+                    Just char ->
+                        Parser.succeed char
+            )
+
+
 puzzle : Puzzle
 puzzle =
     { validate = Parser.run parser >> Result.map (\_ -> "could not parse") >> Result.mapError Parser.deadEndsToString

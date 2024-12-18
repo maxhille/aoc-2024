@@ -97,18 +97,11 @@ gridParser itemParser =
         |> Parser.map Grid.fromLists
 
 
-charParser : (Char -> Bool) -> Parser Char
-charParser isChar =
-    Parser.getChompedString (Parser.chompIf isChar)
-        |> Parser.andThen
-            (\str ->
-                case str |> String.toList >> List.head of
-                    Nothing ->
-                        Parser.problem "could not parse char"
-
-                    Just char ->
-                        Parser.succeed char
-            )
+charParser : List ( Char, b ) -> Parser b
+charParser list =
+    list
+        |> List.map (\( char, b ) -> Parser.symbol (String.fromChar char) |> Parser.map (always b))
+        |> Parser.oneOf
 
 
 cartesian : List a -> List b -> List ( a, b )

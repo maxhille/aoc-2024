@@ -351,19 +351,12 @@ warehouseParser =
                 , end = ""
                 , separator = ""
                 , spaces = Parser.chompWhile (always False)
-                , item = charParser [ ( '#', Wall ), ( '.', Empty ), ( 'O', Box ), ( '@', Robot ) ]
+                , item = Puzzle.charParser [ ( '#', Wall ), ( '.', Empty ), ( 'O', Box ), ( '@', Robot ) ]
                 , trailing = Parser.Mandatory
                 }
         , trailing = Parser.Optional
         }
         |> Parser.map (List.filter (not << List.isEmpty) >> Grid.fromLists)
-
-
-charParser : List ( Char, b ) -> Parser b
-charParser list =
-    list
-        |> List.map (\( char, b ) -> Parser.symbol (String.fromChar char) |> Parser.map (always b))
-        |> Parser.oneOf
 
 
 directionsParser : Parser (List Direction)
@@ -373,7 +366,7 @@ directionsParser =
         , end = ""
         , separator = ""
         , spaces = Parser.spaces
-        , item = charParser [ ( '^', Up ), ( '<', Left ), ( '>', Right ), ( 'v', Down ) ]
+        , item = Puzzle.charParser [ ( '^', Up ), ( '<', Left ), ( '>', Right ), ( 'v', Down ) ]
         , trailing = Parser.Optional
         }
 
