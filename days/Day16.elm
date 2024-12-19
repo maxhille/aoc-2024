@@ -5,6 +5,7 @@ import Dict exposing (Dict)
 import Grid exposing (Grid, Pos)
 import Parser exposing ((|.), (|=), Parser, Trailing(..))
 import Puzzle exposing (Puzzle)
+import Set
 
 
 type alias Maze =
@@ -71,19 +72,119 @@ calculatePart1 : Maze -> Result String Int
 calculatePart1 maze =
     case ( Grid.find ((==) Start) maze, Grid.find ((==) End) maze ) of
         ( [ start ], [ end ] ) ->
-            fill ( start, East ) end maze
+            fillHelp maze (Dict.singleton (toLocation ( start, East )) 0) Dict.empty
+                |> Dict.filter (\( location, _ ) _ -> location == end)
+                |> Dict.values
+                |> List.minimum
+                |> Result.fromMaybe "end not reached"
 
         _ ->
             Err "maze has zero or multiple starts/ends"
 
 
-fill : ( Pos, Direction ) -> Pos -> Maze -> Result String Int
-fill deer end maze =
-    fillHelp maze (Dict.singleton (toLocation deer) 0) Dict.empty
-        |> Dict.filter (\( location, _ ) _ -> location == end)
-        |> Dict.values
-        |> List.minimum
-        |> Result.fromMaybe "end not reached"
+calculatePart2 : Maze -> Result String Int
+calculatePart2 maze =
+    case ( Grid.find ((==) Start) maze, Grid.find ((==) End) maze ) of
+        ( [ start ], [ end ] ) ->
+            fillHelp maze (Dict.singleton (toLocation ( start, East )) 0) Dict.empty
+                |> (\paths ->
+                        [ North, South, East, West ]
+                            |> List.map (Tuple.pair end >> toLocation)
+                            |> List.filter (\end_ -> Dict.member end_ paths)
+                            |> takeLowestScore paths
+                            |> (\ends -> backtrack (List.length ends) paths ends)
+                   )
+                |> Ok
+
+        _ ->
+            Err "maze has zero or multiple starts/ends"
+
+
+takeLowestScore : Dict Location Int -> List Location -> List ( Location, Int )
+takeLowestScore paths list =
+    let
+        withScore =
+            list
+                |> List.filterMap (\location -> Dict.get location paths |> Maybe.map (\score -> ( location, score )))
+
+        lowest =
+            withScore
+                |> List.map Tuple.second
+                |> List.minimum
+                |> Maybe.withDefault -1
+    in
+    withScore |> List.filter (Tuple.second >> (==) lowest)
+
+
+backtrack : Int -> Dict Location Int -> List ( Location, Int ) -> Int
+backtrack count paths tracks =
+    let
+        moveBack ( ( x, y ), direction ) =
+            case direction of
+                North ->
+                    ( x, y + 1 )
+
+                South ->
+                    ( x, y - 1 )
+
+                East ->
+                    ( x - 1, y )
+
+                West ->
+                    ( x + 1, y )
+
+        opposite dir =
+            case dir of
+                North ->
+                    South
+
+                South ->
+                    North
+
+                West ->
+                    East
+
+                East ->
+                    West
+
+        turnCost dir1 dir2 =
+            if dir1 == dir2 then
+                0
+
+            else if dir1 == opposite dir2 then
+                2000
+
+            else
+                1000
+
+        countPositions =
+            List.map (\( ( pos, _ ), _ ) -> pos)
+                >> Set.fromList
+                >> Set.size
+    in
+    if tracks == [] then
+        count
+
+    else
+        List.foldr
+            (\( location, score ) newTracks ->
+                let
+                    ( pos, dir ) =
+                        fromLocation location
+
+                    backs =
+                        [ South, East, West, North ]
+                            |> List.map (\newDir -> ( ( moveBack ( pos, dir ), newDir ), score - 1 - turnCost dir newDir ))
+                            |> List.filter (\( ( backPos, backDir ), backScore ) -> Dict.get (toLocation ( backPos, backDir )) paths |> Maybe.map ((==) backScore) |> Maybe.withDefault False)
+                            |> List.map (Tuple.mapFirst toLocation)
+                in
+                backs ++ newTracks
+            )
+            []
+            tracks
+            |> Set.fromList
+            |> Set.toList
+            |> (\backs -> backtrack (count + countPositions backs) paths backs)
 
 
 fillHelp : Maze -> Dict Location Int -> Dict Location Int -> Dict Location Int
@@ -220,11 +321,6 @@ mergeLowScore dict1 dict2 =
         dict1
         dict2
         Dict.empty
-
-
-calculatePart2 : Maze -> Result String Int
-calculatePart2 =
-    Puzzle.notImplemented
 
 
 parser : Parser Maze

@@ -71,6 +71,66 @@ suite =
                         |> Result.mapError Parser.deadEndsToString
                         |> Result.andThen calculatePart1
                     )
+        , test "Part 2 - Example 1" <|
+            \_ ->
+                let
+                    input =
+                        sanitize <|
+                            """
+                            ###############
+                            #.......#....E#
+                            #.#.###.#.###.#
+                            #.....#.#...#.#
+                            #.###.#####.#.#
+                            #.#.#.......#.#
+                            #.#.#####.###.#
+                            #...........#.#
+                            ###.#.#####.#.#
+                            #...#.....#.#.#
+                            #.#.#.###.#.#.#
+                            #.....#...#.#.#
+                            #.###.#.#.#.#.#
+                            #S..#.....#...#
+                            ###############
+                            """
+                in
+                Expect.equal
+                    (Ok 45)
+                    (Parser.run parser input
+                        |> Result.mapError Parser.deadEndsToString
+                        |> Result.andThen calculatePart2
+                    )
+        , test "Part 2 - Example 2" <|
+            \_ ->
+                let
+                    input =
+                        sanitize <|
+                            """
+                            #################
+                            #...#...#...#..E#
+                            #.#.#.#.#.#.#.#.#
+                            #.#.#.#...#...#.#
+                            #.#.#.#.###.#.#.#
+                            #...#.#.#.....#.#
+                            #.#.#.#.#.#####.#
+                            #.#...#.#.#.....#
+                            #.#.#####.#.###.#
+                            #.#.#.......#...#
+                            #.#.###.#####.###
+                            #.#.#...#.....#.#
+                            #.#.#.#####.###.#
+                            #.#.#.........#.#
+                            #.#.#.#########.#
+                            #S#.............#
+                            #################
+                            """
+                in
+                Expect.equal
+                    (Ok 64)
+                    (Parser.run parser input
+                        |> Result.mapError Parser.deadEndsToString
+                        |> Result.andThen calculatePart2
+                    )
         , test "parser" <|
             \_ ->
                 let
